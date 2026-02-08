@@ -5,32 +5,53 @@ async function loadState() {
   state = await res.json();
   renderAll();
 }
-
 function renderAll() {
   // Теплица
   document.getElementById('gh-temp').textContent = state.greenhouse.temp;
   document.getElementById('gh-hum').textContent = state.greenhouse.hum;
-  updateButton('gh-window-btn', state.greenhouse.window, 'Открыто', 'Закрыто');
-  updateButton('gh-water-btn', state.greenhouse.watering, 'Вкл', 'Выкл');
-  updateButton('gh-light-btn', state.greenhouse.light, 'Вкл', 'Выкл');
 
-  // Погода
-  document.getElementById('w-temp').textContent = state.weather.temp;
-  document.getElementById('w-wind').textContent = state.weather.wind;
-  const rainEl = document.getElementById('w-rain');
-  rainEl.textContent = state.weather.rain ? 'Идёт' : 'Нет';
-  rainEl.className = state.weather.rain ? 'badge bg-danger' : 'badge bg-success';
+  // Окно
+  const winStatus = document.getElementById('gh-window-status');
+  winStatus.textContent = state.greenhouse.window ? 'Открыто' : 'Закрыто';
+  winStatus.className = `badge badge-state ${state.greenhouse.window ? 'bg-success' : 'bg-secondary'}`;
+  document.getElementById('gh-window-btn').textContent = state.greenhouse.window ? 'Закрыть окно' : 'Открыть окно';
+
+  // Полив
+  const waterStatus = document.getElementById('gh-water-status');
+  waterStatus.textContent = state.greenhouse.watering ? 'Включён' : 'Выключен';
+  waterStatus.className = `badge badge-state ${state.greenhouse.watering ? 'bg-success' : 'bg-secondary'}`;
+  document.getElementById('gh-water-btn').textContent = state.greenhouse.watering ? 'Выключить полив' : 'Включить полив';
+
+  // Свет
+  const lightStatus = document.getElementById('gh-light-status');
+  lightStatus.textContent = state.greenhouse.light ? 'Включён' : 'Выключен';
+  lightStatus.className = `badge badge-state ${state.greenhouse.light ? 'bg-success' : 'bg-secondary'}`;
+  document.getElementById('gh-light-btn').textContent = state.greenhouse.light ? 'Выключить свет' : 'Включить свет';
 
   // Загоны
   const pensHtml = state.pens.map(p => `
     <div class="col-md-6">
-      <div class="card">
+      <div class="card h-100">
+        <div class="card-header bg-secondary text-white">Загон ${p.id}</div>
         <div class="card-body">
-          <h6>Загон ${p.id}</h6>
-          <p>Дверь: <span class="status-dot ${p.door ? 'bg-success' : 'bg-secondary'}"></span> ${p.door ? 'Открыта' : 'Закрыта'}</p>
-          <p>Вода: ${p.water}%</p>
-          <button onclick="togglePen(${p.id}, 'door')" class="btn btn-sm btn-outline-primary">${p.door ? 'Закрыть' : 'Открыть'} дверь</button>
-          <button onclick="togglePen(${p.id}, 'pump')" class="btn btn-sm btn-outline-info">${p.pump ? 'Выкл' : 'Вкл'} помпу</button>
+
+          <div class="mb-3">
+            <strong>Дверь:</strong>
+            <span class="badge badge-state ${p.door ? 'bg-success' : 'bg-secondary'}">${p.door ? 'Открыта' : 'Закрыта'}</span>
+          </div>
+          <button onclick="togglePen(${p.id}, 'door')" class="btn btn-outline-primary w-100 mb-3">
+            ${p.door ? 'Закрыть дверь' : 'Открыть дверь'}
+          </button>
+
+          <div class="mb-3">
+            <strong>Помпа:</strong>
+            <span class="badge badge-state ${p.pump ? 'bg-success' : 'bg-secondary'}">${p.pump ? 'Включена' : 'Выключена'}</span>
+          </div>
+          <button onclick="togglePen(${p.id}, 'pump')" class="btn btn-outline-info w-100">
+            ${p.pump ? 'Выключить помпу' : 'Включить помпу'}
+          </button>
+
+          <p class="mt-3 mb-0">Уровень воды: <strong>${p.water}%</strong></p>
         </div>
       </div>
     </div>
@@ -38,31 +59,32 @@ function renderAll() {
   document.getElementById('pens').innerHTML = pensHtml;
 
   // Конвейер
-  document.getElementById('conv-status').textContent = state.conveyor.on ? 'Работает' : 'Выкл';
-  document.getElementById('conv-status').className = state.conveyor.on ? 'badge bg-success' : 'badge bg-secondary';
+  const convStatus = document.getElementById('conv-status');
+  convStatus.textContent = state.conveyor.on ? 'Работает' : 'Выключен';
+  convStatus.className = `badge badge-state ${state.conveyor.on ? 'bg-success' : 'bg-secondary'}`;
+
   document.getElementById('conv-count').textContent = state.conveyor.count;
   document.getElementById('conv-wrong').textContent = state.conveyor.wrong;
-  document.getElementById('conv-btn').textContent = state.conveyor.on ? 'Выключить' : 'Включить';
-  document.getElementById('conv-btn').className = state.conveyor.on ? 'btn btn-danger' : 'btn btn-success';
+
+  document.getElementById('conv-btn').textContent = state.conveyor.on ? 'Выключить конвейер' : 'Включить конвейер';
+  document.getElementById('conv-btn').className = state.conveyor.on ? 'btn btn-danger w-100' : 'btn btn-success w-100';
 
   // Трактор
   const posMap = { warehouse: 'Склад', greenhouse: 'Теплица', pens: 'Загоны', conveyor: 'Конвейер' };
   document.getElementById('tractor-pos').textContent = posMap[state.tractor.position] || state.tractor.position;
 
-    // Уведомления (в сайдбаре)
+  // Уведомления
   const notifContainer = document.getElementById('notifications');
-  const notifs = state.notifications.slice(-20).reverse();   // последние 20
+  const notifs = state.notifications.slice(-20).reverse();
   notifContainer.innerHTML = notifs.map(n => `
     <div class="list-group-item d-flex justify-content-between align-items-start">
       <div>
         <div class="fw-bold text-primary">${n.time}</div>
         <div>${n.msg}</div>
       </div>
-      <button onclick="removeNotification(${n.id})" class="btn-close mt-1 ms-2" aria-label="Close"></button>
+      <button onclick="removeNotification(${n.id})" class="btn-close mt-1 ms-2"></button>
     </div>
   `).join('');
-
-  // Счётчик уведомлений
   document.getElementById('notif-count').textContent = state.notifications.length;
 }
 

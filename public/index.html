@@ -6,162 +6,153 @@
   <title>🌾 Стенд для фермы у школы 137</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body {
-      background: url('fon.jfif') no-repeat center center fixed;
-      background-size: cover;
-      min-height: 100vh;
-      color: #333;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
-    
-    .overlay {
-      background: rgba(255, 255, 255, 0.42);
-      min-height: 100vh;
-      padding-bottom: 60px;
-    }
-
-    .card {
-      transition: all 0.3s;
-      border: none;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    }
-    .card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-    }
-    .navbar {
-      background: rgba(33, 37, 41, 0.95) !important;
-      backdrop-filter: blur(10px);
-    }
-    .status-dot {
-      width: 14px; height: 14px; border-radius: 50%; display: inline-block;
-    }
-
-    /* Сайдбар уведомлений */
-    #notifications {
-      max-height: 75vh;
-      overflow-y: auto;
-    }
-    .list-group-item {
-      border-left: 4px solid #0d6efd;
-    }
+    body { background: url('fon.jfif') no-repeat center center fixed; background-size: cover; min-height: 100vh; color: #333; }
+    .overlay { background: rgba(255,255,255,0.42); min-height: 100vh; padding-bottom: 60px; }
+    .card { transition: all 0.3s; border: none; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+    .card:hover { transform: translateY(-6px); box-shadow: 0 15px 35px rgba(0,0,0,0.15); }
+    .navbar { background: rgba(33,37,41,0.95) !important; backdrop-filter: blur(10px); }
+    .badge-state { font-size: 1.05rem; padding: 6px 14px; }
   </style>
 </head>
 <body>
 
-  <div class="overlay">
-    <!-- Навигация -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-      <div class="container">
-        <a class="navbar-brand fw-bold fs-3" href="#">🌾 Стенд для фермы у школы 137</a>
-      </div>
-    </nav>
+<div class="overlay">
+  <nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+      <a class="navbar-brand fw-bold fs-3" href="#">🌾 Стенд для фермы у школы 137</a>
+    </div>
+  </nav>
 
-    <div class="container mt-5">
-      <div class="row">
+  <div class="container mt-5">
+    <div class="row">
 
-        <!-- Основной контент (8 колонок) -->
-        <div class="col-lg-8">
-          <div class="row g-4">
+      <!-- Основной контент -->
+      <div class="col-lg-8">
+        <div class="row g-4">
 
-            <!-- Теплица -->
-            <div class="col-lg-6">
-              <div class="card h-100">
-                <div class="card-header bg-success text-white fs-5">🌱 Теплица</div>
-                <div class="card-body">
-                  <p>Температура: <strong id="gh-temp">24</strong>°C | Влажность: <strong id="gh-hum">65</strong>%</p>
-                  <div class="d-flex gap-3 flex-wrap">
-                    <button onclick="toggleGH('window')" class="btn btn-outline-primary" id="gh-window-btn">Окно: Закрыто</button>
-                    <button onclick="toggleGH('watering')" class="btn btn-outline-primary" id="gh-water-btn">Полив: Выкл</button>
-                    <button onclick="toggleGH('light')" class="btn btn-outline-primary" id="gh-light-btn">Свет: Выкл</button>
+          <!-- Теплица -->
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header bg-success text-white fs-5">🌱 Теплица</div>
+              <div class="card-body">
+                <p>Температура: <strong id="gh-temp">24</strong>°C | Влажность: <strong id="gh-hum">65</strong>%</p>
+
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong>Окно:</strong>
+                    <span id="gh-window-status" class="badge badge-state bg-secondary">Закрыто</span>
                   </div>
+                  <button onclick="toggleGH('window')" class="btn btn-outline-success w-100 mt-2" id="gh-window-btn">Открыть окно</button>
                 </div>
-              </div>
-            </div>
 
-            <!-- Метеостанция -->
-            <div class="col-lg-6">
-              <div class="card h-100">
-                <div class="card-header bg-info text-white fs-5">⛅ Метеостанция</div>
-                <div class="card-body">
-                  <p>Темп: <strong id="w-temp">16</strong>°C | Ветер: <strong id="w-wind">8</strong> м/с | Дождь: <span id="w-rain" class="badge bg-danger">Нет</span></p>
-                </div>
-              </div>
-            </div>
-
-            <!-- Загоны -->
-            <div class="col-12">
-              <h5 class="mb-3 fw-bold">🐄 Загоны для коров</h5>
-              <div class="row g-3" id="pens"></div>
-            </div>
-
-            <!-- Конвейер -->
-            <div class="col-lg-6">
-              <div class="card">
-                <div class="card-header bg-primary text-white fs-5">🏭 Конвейер с RFID</div>
-                <div class="card-body">
-                  <p>Состояние: <span id="conv-status" class="badge bg-success">Выкл</span></p>
-                  <p>Овощей прошло: <strong id="conv-count">142</strong></p>
-                  <p>Ошибок RFID: <strong id="conv-wrong" class="text-danger">0</strong></p>
-                  <button onclick="toggleConveyor()" class="btn btn-success" id="conv-btn">Включить</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Трактор -->
-            <div class="col-lg-6">
-              <div class="card">
-                <div class="card-header bg-warning text-dark fs-5">🚜 Трактор</div>
-                <div class="card-body">
-                  <p>Сейчас: <strong id="tractor-pos">Склад</strong></p>
-                  <div class="btn-group w-100">
-                    <button onclick="sendTractor('warehouse')" class="btn btn-outline-secondary">Склад</button>
-                    <button onclick="sendTractor('greenhouse')" class="btn btn-outline-secondary">Теплица</button>
-                    <button onclick="sendTractor('pens')" class="btn btn-outline-secondary">Загоны</button>
-                    <button onclick="sendTractor('conveyor')" class="btn btn-outline-secondary">Конвейер</button>
+                <div class="mb-4">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong>Полив:</strong>
+                    <span id="gh-water-status" class="badge badge-state bg-secondary">Выключен</span>
                   </div>
+                  <button onclick="toggleGH('watering')" class="btn btn-outline-success w-100 mt-2" id="gh-water-btn">Включить полив</button>
+                </div>
+
+                <div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <strong>Свет:</strong>
+                    <span id="gh-light-status" class="badge badge-state bg-secondary">Выключен</span>
+                  </div>
+                  <button onclick="toggleGH('light')" class="btn btn-outline-success w-100 mt-2" id="gh-light-btn">Включить свет</button>
                 </div>
               </div>
-            </div>
-
-            <!-- Сценарии -->
-            <div class="col-12">
-              <div class="card">
-                <div class="card-header fs-5">⚙️ Автоматические сценарии</div>
-                <div class="card-body">
-                  <div class="form-check form-switch mb-3">
-                    <input class="form-check-input" type="checkbox" id="sc-storm" checked onchange="toggleScenario('storm')">
-                    <label class="form-check-label">Сильный ветер + дождь → открыть двери загонов</label>
-                  </div>
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="sc-wrong" checked onchange="toggleScenario('wrongVeg')">
-                    <label class="form-check-label">Неправильная RFID → отправить трактор к конвейеру</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <!-- Сайдбар уведомлений (3-я колонка) -->
-        <div class="col-lg-4">
-          <div class="sticky-top" style="top: 90px;">
-            <div class="card shadow">
-              <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <span>🔔 Уведомления</span>
-                <span class="badge bg-secondary" id="notif-count">0</span>
-              </div>
-              <div id="notifications" class="list-group list-group-flush"></div>
             </div>
           </div>
+
+          <!-- Метеостанция -->
+          <div class="col-lg-6">
+            <div class="card h-100">
+              <div class="card-header bg-info text-white fs-5">⛅ Метеостанция</div>
+              <div class="card-body">
+                <p>Темп: <strong id="w-temp">16</strong>°C | Ветер: <strong id="w-wind">8</strong> м/с | Дождь: <span id="w-rain" class="badge bg-danger">Нет</span></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Загоны -->
+          <div class="col-12">
+            <h5 class="mb-3 fw-bold">🐄 Загоны для коров</h5>
+            <div class="row g-3" id="pens"></div>
+          </div>
+
+        
+          <!-- Конвейер -->
+        <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white fs-5">🏭 Конвейер с RFID</div>
+            <div class="card-body">
+            <div class="mb-3">
+                <strong>Состояние:</strong>
+                <span id="conv-status" class="badge badge-state bg-secondary">Выключен</span>
+            </div>
+
+            <p>Овощей прошло: <strong id="conv-count">142</strong></p>
+            <p>Ошибок RFID: <strong id="conv-wrong" class="text-danger">0</strong></p>
+
+            <button onclick="toggleConveyor()" class="btn btn-success w-100" id="conv-btn">Включить конвейер</button>
+            </div>
+        </div>
         </div>
 
+          <!-- Трактор -->
+          <div class="col-lg-6">
+            <div class="card">
+              <div class="card-header bg-warning text-dark fs-5">🚜 Трактор</div>
+              <div class="card-body">
+                <p>Сейчас: <strong id="tractor-pos">Склад</strong></p>
+                <div class="btn-group w-100">
+                  <button onclick="sendTractor('warehouse')" class="btn btn-outline-secondary">Склад</button>
+                  <button onclick="sendTractor('greenhouse')" class="btn btn-outline-secondary">Теплица</button>
+                  <button onclick="sendTractor('pens')" class="btn btn-outline-secondary">Загоны</button>
+                  <button onclick="sendTractor('conveyor')" class="btn btn-outline-secondary">Конвейер</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Сценарии -->
+          <div class="col-12">
+            <div class="card">
+              <div class="card-header fs-5">⚙️ Автоматические сценарии</div>
+              <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                  <input class="form-check-input" type="checkbox" id="sc-storm" checked onchange="toggleScenario('storm')">
+                  <label class="form-check-label">Сильный ветер + дождь → открыть двери загонов</label>
+                </div>
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="sc-wrong" checked onchange="toggleScenario('wrongVeg')">
+                  <label class="form-check-label">Неправильная RFID → отправить трактор к конвейеру</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
+
+      <!-- Сайдбар уведомлений -->
+      <div class="col-lg-4">
+        <div class="sticky-top" style="top: 90px;">
+          <div class="card shadow">
+            <div class="card-header bg-dark text-white d-flex justify-content-between">
+              <span>🔔 Уведомления</span>
+              <span class="badge bg-secondary" id="notif-count">0</span>
+            </div>
+            <div id="notifications" class="list-group list-group-flush"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
+</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
 </body>
 </html>

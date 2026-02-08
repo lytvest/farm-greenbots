@@ -15,7 +15,7 @@ let state = {
     { id: 1, door: false, water: 68, pump: false },
     { id: 2, door: false, water: 45, pump: false }
   ],
-  conveyor: { on: false, count: 142, wrong: 0, lastRfid: 'VEG-001' },
+  conveyor: { on: false, count: 13, wrong: 0, lastRfid: 'VEG-001' },
   tractor: { position: 'warehouse' },
   scenarios: { storm: true, wrongVeg: true },
   notifications: []
