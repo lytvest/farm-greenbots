@@ -49,14 +49,21 @@ function renderAll() {
   const posMap = { warehouse: 'Склад', greenhouse: 'Теплица', pens: 'Загоны', conveyor: 'Конвейер' };
   document.getElementById('tractor-pos').textContent = posMap[state.tractor.position] || state.tractor.position;
 
-  // Уведомления (новые — сверху)
+    // Уведомления (в сайдбаре)
   const notifContainer = document.getElementById('notifications');
-  notifContainer.innerHTML = state.notifications.slice(-8).reverse().map(n => `
-    <div class="alert alert-info" role="alert">
-      <strong>${n.time}</strong> — ${n.msg}
-      <button type="button" class="btn-close" onclick="removeNotification(${n.id})" aria-label="Close"></button>
+  const notifs = state.notifications.slice(-20).reverse();   // последние 20
+  notifContainer.innerHTML = notifs.map(n => `
+    <div class="list-group-item d-flex justify-content-between align-items-start">
+      <div>
+        <div class="fw-bold text-primary">${n.time}</div>
+        <div>${n.msg}</div>
+      </div>
+      <button onclick="removeNotification(${n.id})" class="btn-close mt-1 ms-2" aria-label="Close"></button>
     </div>
   `).join('');
+
+  // Счётчик уведомлений
+  document.getElementById('notif-count').textContent = state.notifications.length;
 }
 
 function updateButton(id, value, onText, offText) {
