@@ -1,10 +1,133 @@
 let state = {};
 
+let weatherChart = null;        // обычный график (макс 20 точек)
+let fullWeatherChart = null;    // полный экран (все точки)
+
+function downsample(history, maxPoints = 20) {
+  if (history.length <= maxPoints) return history;
+
+  const step = Math.floor(history.length / maxPoints);
+  const result = [];
+
+  for (let i = 0; i < maxPoints; i++) {
+    const start = i * step;
+    const end = Math.min(start + step, history.length);
+    const segment = history.slice(start, end);
+
+    const avgTemp = segment.reduce((sum, p) => sum + p.temp, 0) / segment.length;
+    const avgWind = segment.reduce((sum, p) => sum + p.wind, 0) / segment.length;
+    const hasRain = segment.some(p => p.rain === 1);
+
+    result.push({
+      time: segment[segment.length - 1].time,
+      temp: Math.round(avgTemp * 10) / 10,
+      wind: Math.round(avgWind),
+      rain: hasRain ? 1 : 0
+    });
+  }
+  return result;
+}
+
+function initWeatherChart() {
+  const ctx = document.getElementById('weatherChart').getContext('2d');
+  weatherChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: 'Температура (°C)', data: [], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', tension: 0.4, borderWidth: 3, yAxisID: 'y' },
+        { label: 'Ветер (м/с)',      data: [], borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)', tension: 0.4, borderWidth: 3, yAxisID: 'y1' },
+        { label: 'Дождь',            data: [], type: 'bar', backgroundColor: 'rgba(52,152,219,0.6)', yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y:  { position: 'left', title: { display: true, text: '°C' } },
+        y1: { position: 'right', title: { display: true, text: 'м/с' }, grid: { drawOnChartArea: false } },
+        y2: { position: 'right', max: 1.2, ticks: { stepSize: 1 } }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+}
+
+function updateWeatherChart() {
+  const history = state.weatherHistory || [];
+  const displayHistory = downsample(history, 20);   // ← сглаживание до 20 точек
+
+  weatherChart.data.labels = displayHistory.map(h => h.time);
+  weatherChart.data.datasets[0].data = displayHistory.map(h => h.temp);
+  weatherChart.data.datasets[1].data = displayHistory.map(h => h.wind);
+  weatherChart.data.datasets[2].data = displayHistory.map(h => h.rain);
+  weatherChart.update();
+}
+
+function createFullScreenChart() {
+  if (fullWeatherChart) fullWeatherChart.destroy();
+
+  const ctx = document.getElementById('fullWeatherChart').getContext('2d');
+  const history = state.weatherHistory || [];
+
+  fullWeatherChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: history.map(h => h.time),
+      datasets: [
+        { label: 'Температура (°C)', data: history.map(h => h.temp), borderColor: '#e74c3c', tension: 0.2, borderWidth: 3, yAxisID: 'y' },
+        { label: 'Ветер (м/с)',      data: history.map(h => h.wind), borderColor: '#3498db', tension: 0.2, borderWidth: 3, yAxisID: 'y1' },
+        { label: 'Дождь',            data: history.map(h => h.rain), type: 'bar', backgroundColor: 'rgba(52,152,219,0.7)', yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y:  { position: 'left', title: { display: true, text: '°C' } },
+        y1: { position: 'right', title: { display: true, text: 'м/с' }, grid: { drawOnChartArea: false } },
+        y2: { position: 'right', max: 1.2, ticks: { stepSize: 1 } }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  });
+}
+
+function toggleFullScreenChart() {
+  const modal = new bootstrap.Modal(document.getElementById('fullScreenChartModal'));
+  modal.show();
+}
+
+// Обновляем обычный график при каждой загрузке состояния
+
+
+// При открытии модального окна создаём полный график
+document.getElementById('fullScreenChartModal').addEventListener('shown.bs.modal', () => {
+  createFullScreenChart();
+});
+
+// При закрытии модалки уничтожаем график (освобождаем память)
+document.getElementById('fullScreenChartModal').addEventListener('hidden.bs.modal', () => {
+  if (fullWeatherChart) {
+    fullWeatherChart.destroy();
+    fullWeatherChart = null;
+  }
+});
+
+// Инициализация при загрузке страницы
+window.addEventListener('load', () => {
+  initWeatherChart();
+  updateWeatherChart();
+});
+
 async function loadState() {
   const res = await fetch('/api/state');
   state = await res.json();
   renderAll();
+  if (weatherChart) updateWeatherChart();
 }
+
+
 function renderAll() {
   // Теплица
   document.getElementById('gh-temp').textContent = state.greenhouse.temp;
@@ -27,6 +150,12 @@ function renderAll() {
   lightStatus.textContent = state.greenhouse.light ? 'Включён' : 'Выключен';
   lightStatus.className = `badge badge-state ${state.greenhouse.light ? 'bg-success' : 'bg-secondary'}`;
   document.getElementById('gh-light-btn').textContent = state.greenhouse.light ? 'Выключить свет' : 'Включить свет';
+
+  // погода 
+  document.getElementById('w-temp').textContent = state.weather.temp;  
+  document.getElementById('w-wind').textContent =  state.weather.wind; 
+  document.getElementById('w-rain').textContent =  state.weather.rain ? 'Идёт' : 'Нет'; 
+  document.getElementById('w-rain').className = state.weather.rain ? 'badge bg-danger' : 'badge bg-success'; 
 
   // Загоны
   const pensHtml = state.pens.map(p => `

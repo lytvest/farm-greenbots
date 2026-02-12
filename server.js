@@ -11,6 +11,7 @@ app.use(bodyParser.json());
 let state = {
   greenhouse: { temp: 24, hum: 65, window: false, watering: false, light: false },
   weather: { temp: 16, wind: 8, rain: false },
+  weatherHistory: [],                    // ← Новая история погоды
   pens: [
     { id: 1, door: false, water: 68, pump: false },
     { id: 2, door: false, water: 45, pump: false }
@@ -24,11 +25,44 @@ let state = {
 let cooldowns = { storm: 0, wrongVeg: 0 };
 let notificationId = 1;
 
-// Проверка сценариев каждую секунду
+// === УЛУЧШЕННАЯ СИМУЛЯЦИЯ ПОГОДЫ ===
 setInterval(() => {
   const now = Date.now();
 
-  // Сценарий 1: сильный ветер + дождь
+  // Симуляция погоды (более плавная и реалистичная)
+  if (Math.random() < 0.15) {
+    // Температура меняется медленно
+    state.weather.temp += (Math.random() * 2 - 1) * 0.8;
+    state.weather.temp = Math.round(Math.max(-5, Math.min(35, state.weather.temp)));
+
+    // Ветер с порывами
+    state.weather.wind = Math.round(Math.max(0, state.weather.wind + (Math.random() * 6 - 3)));
+    if (Math.random() < 0.25) state.weather.wind = Math.floor(Math.random() * 35) + 5;
+
+    // Дождь чаще при сильном ветре
+    if (state.weather.wind > 18) {
+      state.weather.rain = Math.random() < 0.75;
+    } else {
+      state.weather.rain = Math.random() < 0.35;
+    }
+  }
+
+  // Сохраняем историю каждые ~8 секунд (чтобы график был плавным)
+  if (Math.random() < 0.12 || state.weatherHistory.length === 0) {
+    state.weatherHistory.push({
+      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      temp: state.weather.temp,
+      wind: state.weather.wind,
+      rain: state.weather.rain ? 1 : 0
+    });
+
+    // Оставляем только последние 180 точек (~2-3 часа)
+    if (state.weatherHistory.length > 180) {
+      state.weatherHistory.shift();
+    }
+  }
+
+
   if (state.scenarios.storm && now > cooldowns.storm) {
     if (state.weather.wind > 25 && state.weather.rain) {
       state.pens.forEach(p => p.door = true);
@@ -41,7 +75,6 @@ setInterval(() => {
     }
   }
 
-  // Сценарий 2: неправильная RFID
   if (state.scenarios.wrongVeg && now > cooldowns.wrongVeg) {
     if (Math.random() < 0.08) {
       state.conveyor.wrong++;
@@ -56,17 +89,34 @@ setInterval(() => {
     }
   }
 
-  // Оставляем только последние 20 уведомлений
   if (state.notifications.length > 20) state.notifications.shift();
 
-  // Симуляция погоды
-  if (Math.random() < 0.03) {
-    state.weather.wind = Math.floor(Math.random() * 40);
-    state.weather.rain = Math.random() < 0.4;
-  }
 }, 1000);
 
-// API
+// === API ===
+// История погоды
+app.get('/api/weather/history', (req, res) => res.json(state.weatherHistory));
+
+// Новый endpoint — Arduino будет сюда отправлять реальные данные!
+app.post('/api/weather/update', (req, res) => {
+  const { temp, wind, rain } = req.body;
+  if (temp !== undefined) state.weather.temp = parseFloat(temp);
+  if (wind !== undefined) state.weather.wind = parseFloat(wind);
+  if (rain !== undefined) state.weather.rain = Boolean(rain);
+
+  // Сразу сохраняем в историю
+  state.weatherHistory.push({
+    time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+    temp: state.weather.temp,
+    wind: state.weather.wind,
+    rain: state.weather.rain ? 1 : 0
+  });
+
+  if (state.weatherHistory.length > 180) state.weatherHistory.shift();
+
+  res.json({ ok: true, message: "Данные от метеостанции приняты" });
+});
+
 app.get('/api/state', (req, res) => res.json(state));
 
 app.post('/api/greenhouse/:param/:value', (req, res) => {
