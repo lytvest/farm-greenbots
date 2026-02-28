@@ -146,7 +146,21 @@ app.post('/json/data', (req, res) => {
   });
 });
 
-app.get('/api/state', (req, res) => res.json(state));
+app.get('/api/state', (req, res) => {
+  res.json(state)
+});
+
+
+// Новый endpoint для управления лампой
+app.post('/api/greenhouse/light/:color', (req, res) => {
+  const color = req.params.color;
+  if (['off', 'red', 'blue', 'green'].includes(color)) {
+    state.greenhouse.lightMode = color;
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Недопустимый цвет' });
+  }
+});
 
 app.post('/api/greenhouse/:param/:value', (req, res) => {
   state.greenhouse[req.params.param] = req.params.value === 'true';
@@ -180,15 +194,5 @@ app.delete('/api/notification/:id', (req, res) => {
   res.json({ ok: true });
 });
 
-// Новый endpoint для управления лампой
-app.post('/api/greenhouse/light/:color', (req, res) => {
-  const color = req.params.color;
-  if (['off', 'red', 'blue', 'green'].includes(color)) {
-    state.greenhouse.lightMode = color;
-    res.json({ ok: true });
-  } else {
-    res.status(400).json({ error: 'Недопустимый цвет' });
-  }
-});
 
 app.listen(PORT, () => console.log(`Сервер запущен: http://localhost:${PORT}`));
