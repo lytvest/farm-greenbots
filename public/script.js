@@ -274,5 +274,5 @@ async function toggleSimulation() {
   loadState();
 }
 
-setInterval(loadState, 3000);
+setInterval(loadState, 1000);
 loadState();
