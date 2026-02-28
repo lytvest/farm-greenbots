@@ -1,7 +1,7 @@
 let state = {};
 
-let weatherChart = null;        // обычный график (макс 20 точек)
-let fullWeatherChart = null;    // полный экран (все точки)
+let weatherChart = null;
+let fullWeatherChart = null;
 
 function downsample(history, maxPoints = 20) {
   if (history.length <= maxPoints) return history;
@@ -55,7 +55,7 @@ function initWeatherChart() {
 
 function updateWeatherChart() {
   const history = state.weatherHistory || [];
-  const displayHistory = downsample(history, 20);   // ← сглаживание до 20 точек
+  const displayHistory = downsample(history, 20);
 
   weatherChart.data.labels = displayHistory.map(h => h.time);
   weatherChart.data.datasets[0].data = displayHistory.map(h => h.temp);
@@ -98,15 +98,10 @@ function toggleFullScreenChart() {
   modal.show();
 }
 
-// Обновляем обычный график при каждой загрузке состояния
-
-
-// При открытии модального окна создаём полный график
 document.getElementById('fullScreenChartModal').addEventListener('shown.bs.modal', () => {
   createFullScreenChart();
 });
 
-// При закрытии модалки уничтожаем график (освобождаем память)
 document.getElementById('fullScreenChartModal').addEventListener('hidden.bs.modal', () => {
   if (fullWeatherChart) {
     fullWeatherChart.destroy();
@@ -114,7 +109,6 @@ document.getElementById('fullScreenChartModal').addEventListener('hidden.bs.moda
   }
 });
 
-// Инициализация при загрузке страницы
 window.addEventListener('load', () => {
   initWeatherChart();
   updateWeatherChart();
@@ -127,31 +121,33 @@ async function loadState() {
   if (weatherChart) updateWeatherChart();
 }
 
-
 function renderAll() {
-  // Теплица
-  document.getElementById('gh-temp').textContent = state.greenhouse.temp;
-  document.getElementById('gh-hum').textContent = state.greenhouse.hum;
-  document.getElementById('gh-soil-temp').textContent = state.greenhouse.soil_temp;
-  document.getElementById('gh-soil-hum').textContent = state.greenhouse.soil_hum;
-  document.getElementById('gh-light-level').textContent = state.greenhouse.light_level;
-  document.getElementById('gh-press').textContent = state.greenhouse.press;
+  // Теплица — округление до 1 знака после запятой
+  document.getElementById('gh-temp').textContent = state.greenhouse.temp.toFixed(1);
+  document.getElementById('gh-hum').textContent = state.greenhouse.hum.toFixed(1);
+  document.getElementById('gh-soil-temp').textContent = state.greenhouse.soil_temp.toFixed(1);
+  document.getElementById('gh-soil-hum').textContent = state.greenhouse.soil_hum.toFixed(1);
+  document.getElementById('gh-light-level').textContent = state.greenhouse.light_level.toFixed(1);
+  document.getElementById('gh-press').textContent = state.greenhouse.press.toFixed(1);
 
-  // Окно
   const winStatus = document.getElementById('gh-window-status');
   winStatus.textContent = state.greenhouse.window ? 'Открыто' : 'Закрыто';
   winStatus.className = `badge badge-state ${state.greenhouse.window ? 'bg-success' : 'bg-secondary'}`;
   document.getElementById('gh-window-btn').textContent = state.greenhouse.window ? 'Закрыть окно' : 'Открыть окно';
 
-  // Полив
   const waterStatus = document.getElementById('gh-water-status');
   waterStatus.textContent = state.greenhouse.watering ? 'Включён' : 'Выключен';
   waterStatus.className = `badge badge-state ${state.greenhouse.watering ? 'bg-success' : 'bg-secondary'}`;
   document.getElementById('gh-water-btn').textContent = state.greenhouse.watering ? 'Выключить полив' : 'Включить полив';
 
-  // Свет
+  // НОВЫЙ БЛОК: статус вентиляции
+  const ventStatus = document.getElementById('gh-ventilation-status');
+  ventStatus.textContent = state.greenhouse.ventilation ? 'Включена' : 'Выключена';
+  ventStatus.className = `badge badge-state ${state.greenhouse.ventilation ? 'bg-success' : 'bg-secondary'}`;
+  document.getElementById('gh-ventilation-btn').textContent = state.greenhouse.ventilation ? 'Выключить вентиляцию' : 'Включить вентиляцию';
+
   const lightStatus = document.getElementById('gh-light-status');
-  const lightMode = state.greenhouse.lightMode; // 'off', 'red', 'blue', 'green'
+  const lightMode = state.greenhouse.lightMode;
   let statusText, statusClass;
   switch (lightMode) {
     case 'red':   statusText = 'Красный'; statusClass = 'bg-danger'; break;
@@ -162,11 +158,11 @@ function renderAll() {
   lightStatus.textContent = statusText;
   lightStatus.className = `badge badge-state ${statusClass}`;
 
-  // погода 
-  document.getElementById('w-temp').textContent = state.weather.temp;  
-  document.getElementById('w-wind').textContent =  state.weather.wind; 
-  document.getElementById('w-rain').textContent =  state.weather.rain ? 'Идёт' : 'Нет'; 
-  document.getElementById('w-rain').className = state.weather.rain ? 'badge bg-danger' : 'badge bg-success'; 
+  // Погода — округление
+  document.getElementById('w-temp').textContent = state.weather.temp.toFixed(1);
+  document.getElementById('w-wind').textContent = state.weather.wind.toFixed(1);
+  document.getElementById('w-rain').textContent = state.weather.rain ? 'Идёт' : 'Нет';
+  document.getElementById('w-rain').className = state.weather.rain ? 'badge bg-danger' : 'badge bg-success';
 
   // Загоны
   const pensHtml = state.pens.map(p => `
@@ -174,7 +170,6 @@ function renderAll() {
       <div class="card h-100">
         <div class="card-header bg-secondary text-white">Загон ${p.id}</div>
         <div class="card-body">
-
           <div class="mb-3">
             <strong>Дверь:</strong>
             <span class="badge badge-state ${p.door ? 'bg-success' : 'bg-secondary'}">${p.door ? 'Открыта' : 'Закрыта'}</span>
@@ -182,7 +177,6 @@ function renderAll() {
           <button onclick="togglePen(${p.id}, 'door')" class="btn btn-outline-primary w-100 mb-3">
             ${p.door ? 'Закрыть дверь' : 'Открыть дверь'}
           </button>
-
           <div class="mb-3">
             <strong>Помпа:</strong>
             <span class="badge badge-state ${p.pump ? 'bg-success' : 'bg-secondary'}">${p.pump ? 'Включена' : 'Выключена'}</span>
@@ -190,7 +184,6 @@ function renderAll() {
           <button onclick="togglePen(${p.id}, 'pump')" class="btn btn-outline-info w-100">
             ${p.pump ? 'Выключить помпу' : 'Включить помпу'}
           </button>
-
           <p class="mt-3 mb-0">Уровень воды: <strong>${p.water}%</strong></p>
         </div>
       </div>
@@ -228,47 +221,41 @@ function renderAll() {
   document.getElementById('notif-count').textContent = state.notifications.length;
 }
 
-function updateButton(id, value, onText, offText) {
-  const btn = document.getElementById(id);
-  btn.textContent = `${btn.textContent.split(':')[0]}: ${value ? onText : offText}`;
-}
-
 async function removeNotification(id) {
   await fetch(`/api/notification/${id}`, { method: 'DELETE' });
-  loadState();                     // сразу обновляем список
+  loadState();
 }
 
-async function toggleGH(param) { /* без изменений */ 
+async function toggleGH(param) {
   const newVal = !state.greenhouse[param];
   await fetch(`/api/greenhouse/${param}/${newVal}`, { method: 'POST' });
   loadState();
 }
 
-async function togglePen(id, param) { /* без изменений */ 
+async function togglePen(id, param) {
   const pen = state.pens.find(p => p.id === id);
   const newVal = !pen[param];
   await fetch(`/api/pen/${id}/${param}/${newVal}`, { method: 'POST' });
   loadState();
 }
 
-async function toggleConveyor() { /* без изменений */ 
+async function toggleConveyor() {
   const action = state.conveyor.on ? 'off' : 'on';
   await fetch(`/api/conveyor/${action}`, { method: 'POST' });
   loadState();
 }
 
-// функция для управления лампой
 async function setLightColor(color) {
   await fetch(`/api/greenhouse/light/${color}`, { method: 'POST' });
   loadState();
 }
 
-async function sendTractor(place) { /* без изменений */ 
+async function sendTractor(place) {
   await fetch(`/api/tractor/goto/${place}`, { method: 'POST' });
   loadState();
 }
 
-async function toggleScenario(name) { /* без изменений */ 
+async function toggleScenario(name) {
   const enabled = document.getElementById(`sc-${name === 'storm' ? 'storm' : 'wrong'}`).checked;
   await fetch(`/api/scenario/${name}/${enabled}`, { method: 'POST' });
 }

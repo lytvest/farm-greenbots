@@ -112,6 +112,17 @@
                                             полив</button>
                                     </div>
 
+                                    <!-- НОВЫЙ БЛОК ВЕНТИЛЯЦИИ -->
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>Вентиляция:</strong>
+                                            <span id="gh-ventilation-status"
+                                                class="badge badge-state bg-secondary">Выключена</span>
+                                        </div>
+                                        <button onclick="toggleGH('ventilation')" class="btn btn-outline-success w-100 mt-2"
+                                            id="gh-ventilation-btn">Включить вентиляцию</button>
+                                    </div>
+
                                     <div>
                                         <div class="d-flex justify-content-between align-items-center">
                                             <strong>Свет:</strong>
@@ -158,7 +169,6 @@
                             <h5 class="mb-3 fw-bold">🐄 Загоны для коров</h5>
                             <div class="row g-3" id="pens"></div>
                         </div>
-
 
                         <!-- Конвейер -->
                         <div class="col-lg-6">

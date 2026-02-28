@@ -18,10 +18,11 @@ let state = {
     light_level: 1000, 
     window: false, 
     watering: false, 
-    lightMode: 'off'      
+    lightMode: 'off',
+    ventilation: false      
   },
   weather: { temp: 16, wind: 8, rain: false },
-  weatherHistory: [],                    // ← Новая история погоды
+  weatherHistory: [],
   pens: [
     { id: 1, door: false, water: 68, pump: false },
     { id: 2, door: false, water: 45, pump: false }
@@ -39,17 +40,13 @@ let notificationId = 1;
 setInterval(() => {
   const now = Date.now();
 
-  // Симуляция погоды (более плавная и реалистичная)
   if (Math.random() < 0.15) {
-    // Температура меняется медленно
     state.weather.temp += (Math.random() * 2 - 1) * 0.8;
     state.weather.temp = Math.round(Math.max(-5, Math.min(35, state.weather.temp)));
 
-    // Ветер с порывами
     state.weather.wind = Math.round(Math.max(0, state.weather.wind + (Math.random() * 6 - 3)));
     if (Math.random() < 0.25) state.weather.wind = Math.floor(Math.random() * 35) + 5;
 
-    // Дождь чаще при сильном ветре
     if (state.weather.wind > 18) {
       state.weather.rain = Math.random() < 0.75;
     } else {
@@ -57,7 +54,6 @@ setInterval(() => {
     }
   }
 
-  // Сохраняем историю каждые ~8 секунд (чтобы график был плавным)
   if (Math.random() < 0.12 || state.weatherHistory.length === 0) {
     state.weatherHistory.push({
       time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
@@ -66,12 +62,10 @@ setInterval(() => {
       rain: state.weather.rain ? 1 : 0
     });
 
-    // Оставляем только последние 180 точек (~2-3 часа)
     if (state.weatherHistory.length > 180) {
       state.weatherHistory.shift();
     }
   }
-
 
   if (state.scenarios.storm && now > cooldowns.storm) {
     if (state.weather.wind > 25 && state.weather.rain) {
@@ -104,17 +98,14 @@ setInterval(() => {
 }, 1000);
 
 // === API ===
-// История погоды
 app.get('/api/weather/history', (req, res) => res.json(state.weatherHistory));
 
-// Новый endpoint — Arduino будет сюда отправлять реальные данные!
 app.post('/api/weather/update', (req, res) => {
   const { temp, wind, rain } = req.body;
   if (temp !== undefined) state.weather.temp = parseFloat(temp);
   if (wind !== undefined) state.weather.wind = parseFloat(wind);
   if (rain !== undefined) state.weather.rain = Boolean(rain);
 
-  // Сразу сохраняем в историю
   state.weatherHistory.push({
     time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
     temp: state.weather.temp,
@@ -127,11 +118,10 @@ app.post('/api/weather/update', (req, res) => {
   res.json({ ok: true, message: "Данные от метеостанции приняты" });
 });
 
-// Новый endpoint для данных от Arduino (теплица)
+// endpoint для данных от Arduino (теплица) — расширен ответ
 app.post('/json/data', (req, res) => {
   const { soil_temp, soil_hum, light, air_temp, air_hum, air_press } = req.body;
 
-  // Обновляем сенсорные данные теплицы (игнорируем pump и lamp из запроса, так как сервер управляет желаемым состоянием)
   if (soil_temp !== undefined) state.greenhouse.soil_temp = parseFloat(soil_temp);
   if (soil_hum !== undefined) state.greenhouse.soil_hum = parseFloat(soil_hum);
   if (light !== undefined) state.greenhouse.light_level = parseFloat(light);
@@ -139,10 +129,12 @@ app.post('/json/data', (req, res) => {
   if (air_hum !== undefined) state.greenhouse.hum = parseFloat(air_hum);
   if (air_press !== undefined) state.greenhouse.press = parseFloat(air_press);
 
-  // Возвращаем желаемые состояния для насоса (watering) и лампы (light)
+  // Возвращаем желаемые состояния для Arduino
   res.json({
-    pump: state.greenhouse.watering,
-    lamp: state.greenhouse.lightMode
+    pump: state.greenhouse.watering,        // для обратной совместимости
+    lamp: state.greenhouse.lightMode,       
+    window: state.greenhouse.window,
+    ventilation: state.greenhouse.ventilation
   });
 });
 
@@ -150,8 +142,6 @@ app.get('/api/state', (req, res) => {
   res.json(state)
 });
 
-
-// Новый endpoint для управления лампой
 app.post('/api/greenhouse/light/:color', (req, res) => {
   const color = req.params.color;
   if (['off', 'red', 'blue', 'green'].includes(color)) {
@@ -193,6 +183,5 @@ app.delete('/api/notification/:id', (req, res) => {
   state.notifications = state.notifications.filter(n => n.id !== id);
   res.json({ ok: true });
 });
-
 
 app.listen(PORT, () => console.log(`Сервер запущен: http://localhost:${PORT}`));
