@@ -119,9 +119,18 @@ async function loadState() {
   state = await res.json();
   renderAll();
   if (weatherChart) updateWeatherChart();
-  // Синхронизируем переключатель симуляции
+  // Синхронизируем переключатели
   const simSwitch = document.getElementById('simulation-switch');
   if (simSwitch) simSwitch.checked = state.simulation.enabled;
+
+  const scStorm = document.getElementById('sc-storm');
+  if (scStorm) scStorm.checked = state.scenarios.storm;
+
+  const scWrong = document.getElementById('sc-wrong');
+  if (scWrong) scWrong.checked = state.scenarios.wrongVeg;
+
+  const scWaterPump = document.getElementById('sc-water-pump');
+  if (scWaterPump) scWaterPump.checked = state.scenarios.autoWaterPump;
 }
 
 function renderAll() {
@@ -187,10 +196,13 @@ function renderAll() {
             <strong>Помпа:</strong>
             <span class="badge badge-state ${p.pump ? 'bg-success' : 'bg-secondary'}">${p.pump ? 'Включена' : 'Выключена'}</span>
           </div>
-          <button onclick="togglePen(${p.id}, 'pump')" class="btn btn-outline-info w-100">
+          <button onclick="togglePen(${p.id}, 'pump')" class="btn btn-outline-info w-100 mb-3">
             ${p.pump ? 'Выключить помпу' : 'Включить помпу'}
           </button>
-          <p class="mt-3 mb-0">Уровень воды: <strong>${p.water}%</strong></p>
+          <p class="mt-2 mb-0">
+            <strong>Вода:</strong> 
+            <span class="badge ${p.waterPresent ? 'bg-success' : 'bg-danger'}">${p.waterPresent ? 'Есть' : 'Нет'}</span>
+          </p>
         </div>
       </div>
     </div>
@@ -262,15 +274,17 @@ async function sendTractor(place) {
 }
 
 async function toggleScenario(name) {
-  const enabled = document.getElementById(`sc-${name === 'storm' ? 'storm' : 'wrong'}`).checked;
+  const enabled = document.getElementById(
+    name === 'storm' ? 'sc-storm' : 
+    name === 'wrongVeg' ? 'sc-wrong' : 
+    'sc-water-pump'
+  ).checked;
   await fetch(`/api/scenario/${name}/${enabled}`, { method: 'POST' });
 }
 
-// Новая функция для управления симуляцией
 async function toggleSimulation() {
   const enabled = document.getElementById('simulation-switch').checked;
   await fetch(`/api/simulation/${enabled}`, { method: 'POST' });
-  // Не перезагружаем состояние сразу, сервер ответит ok, но можно и loadState для синхронизации
   loadState();
 }
 

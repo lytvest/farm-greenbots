@@ -33,12 +33,12 @@ let state = {
   },
   weatherHistory: [],
   pens: [
-    { id: 1, door: false, water: 68, pump: false },
-    { id: 2, door: false, water: 45, pump: false }
+    { id: 1, door: false, waterPresent: false, pump: false },
+    { id: 2, door: false, waterPresent: false, pump: false }
   ],
   conveyor: { on: false, count: 13, wrong: 0, lastRfid: 'VEG-001' },
   tractor: { position: 'warehouse' },
-  scenarios: { storm: true, wrongVeg: true },
+  scenarios: { storm: true, wrongVeg: true, autoWaterPump: true },
   notifications: [],
   simulation: { enabled: false }  
 };
@@ -139,6 +139,14 @@ setInterval(() => {
     }
   }
 
+  // Сценарий "автоуправление помпой по наличию воды"
+  if (state.scenarios.autoWaterPump) {
+    state.pens.forEach(pen => {
+      // если воды нет – включаем помпу, если есть – выключаем
+      pen.pump = !pen.waterPresent;
+    });
+  }
+
   if (state.notifications.length > 20) state.notifications.shift();
 
 }, 1000);
@@ -181,6 +189,24 @@ app.post('/api/simulation/:enabled', (req, res) => {
   const enabled = req.params.enabled === 'true';
   state.simulation.enabled = enabled;
   res.json({ ok: true, enabled: state.simulation.enabled });
+});
+
+// Эндпоинт для обновления датчика наличия воды в загоне (от Arduino)
+app.post('/api/pen/water/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const pen = state.pens.find(p => p.id === id);
+  if (pen) {
+    // ожидаем в body { waterPresent: true/false }
+    const { waterPresent } = req.body;
+    if (waterPresent !== undefined) {
+      pen.waterPresent = waterPresent === true;
+      res.json({ ok: true });
+    } else {
+      res.status(400).json({ error: 'Missing waterPresent field' });
+    }
+  } else {
+    res.status(404).json({ error: 'Pen not found' });
+  }
 });
 
 // endpoint для данных от Arduino (теплица)
