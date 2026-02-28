@@ -16,13 +16,13 @@ function downsample(history, maxPoints = 20) {
 
     const avgTemp = segment.reduce((sum, p) => sum + p.temp, 0) / segment.length;
     const avgWind = segment.reduce((sum, p) => sum + p.wind, 0) / segment.length;
-    const hasRain = segment.some(p => p.rain === 1);
+    const avgRain = segment.reduce((sum, p) => sum + p.rain_amount, 0) / segment.length;
 
     result.push({
       time: segment[segment.length - 1].time,
       temp: Math.round(avgTemp * 10) / 10,
       wind: Math.round(avgWind),
-      rain: hasRain ? 1 : 0
+      rain_amount: Math.round(avgRain * 100) / 100
     });
   }
   return result;
@@ -37,7 +37,7 @@ function initWeatherChart() {
       datasets: [
         { label: 'Температура (°C)', data: [], borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.1)', tension: 0.4, borderWidth: 3, yAxisID: 'y' },
         { label: 'Ветер (м/с)',      data: [], borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.1)', tension: 0.4, borderWidth: 3, yAxisID: 'y1' },
-        { label: 'Дождь',            data: [], type: 'bar', backgroundColor: 'rgba(52,152,219,0.6)', yAxisID: 'y2' }
+        { label: 'Осадки (мм)',      data: [], type: 'bar', backgroundColor: 'rgba(52,152,219,0.6)', yAxisID: 'y2' }
       ]
     },
     options: {
@@ -46,7 +46,7 @@ function initWeatherChart() {
       scales: {
         y:  { position: 'left', title: { display: true, text: '°C' } },
         y1: { position: 'right', title: { display: true, text: 'м/с' }, grid: { drawOnChartArea: false } },
-        y2: { position: 'right', max: 1.2, ticks: { stepSize: 1 } }
+        y2: { position: 'right', max: 10, ticks: { stepSize: 2 }, title: { display: true, text: 'мм' } }
       },
       plugins: { legend: { position: 'top' } }
     }
@@ -60,7 +60,7 @@ function updateWeatherChart() {
   weatherChart.data.labels = displayHistory.map(h => h.time);
   weatherChart.data.datasets[0].data = displayHistory.map(h => h.temp);
   weatherChart.data.datasets[1].data = displayHistory.map(h => h.wind);
-  weatherChart.data.datasets[2].data = displayHistory.map(h => h.rain);
+  weatherChart.data.datasets[2].data = displayHistory.map(h => h.rain_amount);
   weatherChart.update();
 }
 
@@ -77,7 +77,7 @@ function createFullScreenChart() {
       datasets: [
         { label: 'Температура (°C)', data: history.map(h => h.temp), borderColor: '#e74c3c', tension: 0.2, borderWidth: 3, yAxisID: 'y' },
         { label: 'Ветер (м/с)',      data: history.map(h => h.wind), borderColor: '#3498db', tension: 0.2, borderWidth: 3, yAxisID: 'y1' },
-        { label: 'Дождь',            data: history.map(h => h.rain), type: 'bar', backgroundColor: 'rgba(52,152,219,0.7)', yAxisID: 'y2' }
+        { label: 'Осадки (мм)',      data: history.map(h => h.rain_amount), type: 'bar', backgroundColor: 'rgba(52,152,219,0.7)', yAxisID: 'y2' }
       ]
     },
     options: {
@@ -86,7 +86,7 @@ function createFullScreenChart() {
       scales: {
         y:  { position: 'left', title: { display: true, text: '°C' } },
         y1: { position: 'right', title: { display: true, text: 'м/с' }, grid: { drawOnChartArea: false } },
-        y2: { position: 'right', max: 1.2, ticks: { stepSize: 1 } }
+        y2: { position: 'right', max: 10, ticks: { stepSize: 2 }, title: { display: true, text: 'мм' } }
       },
       plugins: { legend: { position: 'top' } }
     }
@@ -119,10 +119,13 @@ async function loadState() {
   state = await res.json();
   renderAll();
   if (weatherChart) updateWeatherChart();
+  // Синхронизируем переключатель симуляции
+  const simSwitch = document.getElementById('simulation-switch');
+  if (simSwitch) simSwitch.checked = state.simulation.enabled;
 }
 
 function renderAll() {
-  // Теплица — округление до 1 знака после запятой
+  // Теплица
   document.getElementById('gh-temp').textContent = state.greenhouse.temp.toFixed(1);
   document.getElementById('gh-hum').textContent = state.greenhouse.hum.toFixed(1);
   document.getElementById('gh-soil-temp').textContent = state.greenhouse.soil_temp.toFixed(1);
@@ -140,7 +143,6 @@ function renderAll() {
   waterStatus.className = `badge badge-state ${state.greenhouse.watering ? 'bg-success' : 'bg-secondary'}`;
   document.getElementById('gh-water-btn').textContent = state.greenhouse.watering ? 'Выключить полив' : 'Включить полив';
 
-  // НОВЫЙ БЛОК: статус вентиляции
   const ventStatus = document.getElementById('gh-ventilation-status');
   ventStatus.textContent = state.greenhouse.ventilation ? 'Включена' : 'Выключена';
   ventStatus.className = `badge badge-state ${state.greenhouse.ventilation ? 'bg-success' : 'bg-secondary'}`;
@@ -158,11 +160,15 @@ function renderAll() {
   lightStatus.textContent = statusText;
   lightStatus.className = `badge badge-state ${statusClass}`;
 
-  // Погода — округление
+  // Погода
   document.getElementById('w-temp').textContent = state.weather.temp.toFixed(1);
   document.getElementById('w-wind').textContent = state.weather.wind.toFixed(1);
-  document.getElementById('w-rain').textContent = state.weather.rain ? 'Идёт' : 'Нет';
-  document.getElementById('w-rain').className = state.weather.rain ? 'badge bg-danger' : 'badge bg-success';
+  document.getElementById('w-rain-amount').textContent = state.weather.rain_amount.toFixed(2);
+  document.getElementById('w-wind-dir').textContent = state.weather.wind_dir.toFixed(0);
+  document.getElementById('w-humidity').textContent = state.weather.humidity.toFixed(1);
+  document.getElementById('w-pressure').textContent = state.weather.pressure.toFixed(1);
+  document.getElementById('w-uv').textContent = state.weather.uv.toFixed(1);
+  document.getElementById('w-light').textContent = state.weather.light.toFixed(0);
 
   // Загоны
   const pensHtml = state.pens.map(p => `
@@ -258,6 +264,14 @@ async function sendTractor(place) {
 async function toggleScenario(name) {
   const enabled = document.getElementById(`sc-${name === 'storm' ? 'storm' : 'wrong'}`).checked;
   await fetch(`/api/scenario/${name}/${enabled}`, { method: 'POST' });
+}
+
+// Новая функция для управления симуляцией
+async function toggleSimulation() {
+  const enabled = document.getElementById('simulation-switch').checked;
+  await fetch(`/api/simulation/${enabled}`, { method: 'POST' });
+  // Не перезагружаем состояние сразу, сервер ответит ok, но можно и loadState для синхронизации
+  loadState();
 }
 
 setInterval(loadState, 3000);
