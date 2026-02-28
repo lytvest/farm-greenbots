@@ -9,7 +9,17 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 
 let state = {
-  greenhouse: { temp: 24, hum: 65, press: 1013, soil_temp: 20, soil_hum: 50, light_level: 1000, window: false, watering: false, light: false },
+  greenhouse: { 
+    temp: 24, 
+    hum: 65, 
+    press: 1013, 
+    soil_temp: 20, 
+    soil_hum: 50, 
+    light_level: 1000, 
+    window: false, 
+    watering: false, 
+    lightMode: 'off'      
+  },
   weather: { temp: 16, wind: 8, rain: false },
   weatherHistory: [],                    // ← Новая история погоды
   pens: [
@@ -132,7 +142,7 @@ app.post('/json/data', (req, res) => {
   // Возвращаем желаемые состояния для насоса (watering) и лампы (light)
   res.json({
     pump: state.greenhouse.watering,
-    lamp: state.greenhouse.light
+    lamp: state.greenhouse.lightMode
   });
 });
 
@@ -168,6 +178,17 @@ app.delete('/api/notification/:id', (req, res) => {
   const id = parseInt(req.params.id);
   state.notifications = state.notifications.filter(n => n.id !== id);
   res.json({ ok: true });
+});
+
+// Новый endpoint для управления лампой
+app.post('/api/greenhouse/light/:color', (req, res) => {
+  const color = req.params.color;
+  if (['off', 'red', 'blue', 'green'].includes(color)) {
+    state.greenhouse.lightMode = color;
+    res.json({ ok: true });
+  } else {
+    res.status(400).json({ error: 'Недопустимый цвет' });
+  }
 });
 
 app.listen(PORT, () => console.log(`Сервер запущен: http://localhost:${PORT}`));

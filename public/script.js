@@ -151,9 +151,16 @@ function renderAll() {
 
   // Свет
   const lightStatus = document.getElementById('gh-light-status');
-  lightStatus.textContent = state.greenhouse.light ? 'Включён' : 'Выключен';
-  lightStatus.className = `badge badge-state ${state.greenhouse.light ? 'bg-success' : 'bg-secondary'}`;
-  document.getElementById('gh-light-btn').textContent = state.greenhouse.light ? 'Выключить свет' : 'Включить свет';
+  const lightMode = state.greenhouse.lightMode; // 'off', 'red', 'blue', 'green'
+  let statusText, statusClass;
+  switch (lightMode) {
+    case 'red':   statusText = 'Красный'; statusClass = 'bg-danger'; break;
+    case 'blue':  statusText = 'Синий';   statusClass = 'bg-primary'; break;
+    case 'green': statusText = 'Зелёный'; statusClass = 'bg-success'; break;
+    default:      statusText = 'Выключен'; statusClass = 'bg-secondary';
+  }
+  lightStatus.textContent = statusText;
+  lightStatus.className = `badge badge-state ${statusClass}`;
 
   // погода 
   document.getElementById('w-temp').textContent = state.weather.temp;  
@@ -247,6 +254,12 @@ async function togglePen(id, param) { /* без изменений */
 async function toggleConveyor() { /* без изменений */ 
   const action = state.conveyor.on ? 'off' : 'on';
   await fetch(`/api/conveyor/${action}`, { method: 'POST' });
+  loadState();
+}
+
+// функция для управления лампой
+async function setLightColor(color) {
+  await fetch(`/api/greenhouse/light/${color}`, { method: 'POST' });
   loadState();
 }
 

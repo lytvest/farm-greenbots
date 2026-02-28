@@ -115,11 +115,14 @@
                                     <div>
                                         <div class="d-flex justify-content-between align-items-center">
                                             <strong>Свет:</strong>
-                                            <span id="gh-light-status"
-                                                class="badge badge-state bg-secondary">Выключен</span>
+                                            <span id="gh-light-status" class="badge badge-state bg-secondary">Выключен</span>
                                         </div>
-                                        <button onclick="toggleGH('light')" class="btn btn-outline-success w-100 mt-2"
-                                            id="gh-light-btn">Включить свет</button>
+                                        <div class="btn-group w-100 mt-2" role="group">
+                                            <button class="btn btn-outline-danger" onclick="setLightColor('red')">🔴 Красный</button>
+                                            <button class="btn btn-outline-primary" onclick="setLightColor('blue')">🔵 Синий</button>
+                                            <button class="btn btn-outline-success" onclick="setLightColor('green')">🟢 Зелёный</button>
+                                            <button class="btn btn-outline-secondary" onclick="setLightColor('off')">⚫ Выкл</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
