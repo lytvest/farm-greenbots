@@ -132,6 +132,10 @@ function renderAll() {
   // Теплица
   document.getElementById('gh-temp').textContent = state.greenhouse.temp;
   document.getElementById('gh-hum').textContent = state.greenhouse.hum;
+  document.getElementById('gh-soil-temp').textContent = state.greenhouse.soil_temp;
+  document.getElementById('gh-soil-hum').textContent = state.greenhouse.soil_hum;
+  document.getElementById('gh-light-level').textContent = state.greenhouse.light_level;
+  document.getElementById('gh-press').textContent = state.greenhouse.press;
 
   // Окно
   const winStatus = document.getElementById('gh-window-status');

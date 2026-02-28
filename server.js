@@ -9,7 +9,7 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 
 let state = {
-  greenhouse: { temp: 24, hum: 65, window: false, watering: false, light: false },
+  greenhouse: { temp: 24, hum: 65, press: 1013, soil_temp: 20, soil_hum: 50, light_level: 1000, window: false, watering: false, light: false },
   weather: { temp: 16, wind: 8, rain: false },
   weatherHistory: [],                    // ← Новая история погоды
   pens: [
@@ -115,6 +115,25 @@ app.post('/api/weather/update', (req, res) => {
   if (state.weatherHistory.length > 180) state.weatherHistory.shift();
 
   res.json({ ok: true, message: "Данные от метеостанции приняты" });
+});
+
+// Новый endpoint для данных от Arduino (теплица)
+app.post('/json/data', (req, res) => {
+  const { soil_temp, soil_hum, light, air_temp, air_hum, air_press } = req.body;
+
+  // Обновляем сенсорные данные теплицы (игнорируем pump и lamp из запроса, так как сервер управляет желаемым состоянием)
+  if (soil_temp !== undefined) state.greenhouse.soil_temp = parseFloat(soil_temp);
+  if (soil_hum !== undefined) state.greenhouse.soil_hum = parseFloat(soil_hum);
+  if (light !== undefined) state.greenhouse.light_level = parseFloat(light);
+  if (air_temp !== undefined) state.greenhouse.temp = parseFloat(air_temp);
+  if (air_hum !== undefined) state.greenhouse.hum = parseFloat(air_hum);
+  if (air_press !== undefined) state.greenhouse.press = parseFloat(air_press);
+
+  // Возвращаем желаемые состояния для насоса (watering) и лампы (light)
+  res.json({
+    pump: state.greenhouse.watering,
+    lamp: state.greenhouse.light
+  });
 });
 
 app.get('/api/state', (req, res) => res.json(state));
