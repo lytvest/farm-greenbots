@@ -45,6 +45,10 @@
         #weatherChartContainer {
             height: 320px;
         }
+        .weather-params p {
+            margin-bottom: 0.3rem;
+            font-size: 0.95rem;
+        }
     </style>
 </head>
 
@@ -84,12 +88,12 @@
                             <div class="card h-100">
                                 <div class="card-header bg-success text-white fs-5">🌱 Теплица</div>
                                 <div class="card-body">
-                                    <p>Температура воздуха: <strong id="gh-temp">24</strong>°C | Влажность воздуха: <strong
-                                            id="gh-hum">65</strong>%</p>
-                                    <p>Температура почвы: <strong id="gh-soil-temp">20</strong>°C | Влажность почвы: <strong
-                                            id="gh-soil-hum">50</strong>%</p>
-                                    <p>Освещённость: <strong id="gh-light-level">1000</strong> lx | Давление: <strong
-                                            id="gh-press">1013</strong> hPa</p>
+                                    <p>Температура воздуха: <strong id="gh-temp">24</strong>°C </p>
+                                    <p>Влажность воздуха: <strong id="gh-hum">65</strong>%</p>
+                                    <p>Температура почвы: <strong id="gh-soil-temp">20</strong>°C </p> 
+                                    <p>Влажность почвы: <strong id="gh-soil-hum">50</strong>%</p>
+                                    <p>Освещённость: <strong id="gh-light-level">1000</strong> lx </p>
+                                    <p>Давление: <strong id="gh-press">1013</strong> hPa</p>
 
                                     <div class="mb-4">
                                         <div class="d-flex justify-content-between align-items-center">
@@ -112,14 +116,27 @@
                                             полив</button>
                                     </div>
 
+                                    <div class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong>Вентиляция:</strong>
+                                            <span id="gh-ventilation-status"
+                                                class="badge badge-state bg-secondary">Выключена</span>
+                                        </div>
+                                        <button onclick="toggleGH('ventilation')" class="btn btn-outline-success w-100 mt-2"
+                                            id="gh-ventilation-btn">Включить вентиляцию</button>
+                                    </div>
+
                                     <div>
                                         <div class="d-flex justify-content-between align-items-center">
                                             <strong>Свет:</strong>
-                                            <span id="gh-light-status"
-                                                class="badge badge-state bg-secondary">Выключен</span>
+                                            <span id="gh-light-status" class="badge badge-state bg-secondary">Выключен</span>
                                         </div>
-                                        <button onclick="toggleGH('light')" class="btn btn-outline-success w-100 mt-2"
-                                            id="gh-light-btn">Включить свет</button>
+                                        <div class="btn-group w-100 mt-2" role="group">
+                                            <button class="btn btn-outline-danger" onclick="setLightColor('red')">🔴 Красный</button>
+                                            <button class="btn btn-outline-primary" onclick="setLightColor('blue')">🔵 Синий</button>
+                                            <button class="btn btn-outline-success" onclick="setLightColor('green')">🟢 Зелёный</button>
+                                            <button class="btn btn-outline-secondary" onclick="setLightColor('off')">⚫ Выкл</button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -131,9 +148,20 @@
                                 <div class="card h-100">
                                     <div class="card-header bg-info text-white fs-5">⛅ Метеостанция</div>
                                     <div class="card-body">
-                                        <p>Темп: <strong id="w-temp">16</strong>°C | Ветер: <strong
-                                                id="w-wind">8</strong> м/с | Дождь: <span id="w-rain"
-                                                class="badge bg-danger">Нет</span></p>
+                                        <div class="weather-params row">
+                                            <div class="col-6">
+                                                <p>🌡️ Температура: <strong id="w-temp">16.0</strong> °C</p>
+                                                <p>💧 Влажность: <strong id="w-humidity">65.0</strong> %</p>
+                                                <p>🌬️ Ветер: <strong id="w-wind">8.0</strong> м/с</p>
+                                                <p>🧭 Направление: <strong id="w-wind-dir">180</strong>°</p>
+                                            </div>
+                                            <div class="col-6">
+                                                <p>☔ Осадки: <strong id="w-rain-amount">0.00</strong> мм</p>
+                                                <p>📊 Давление: <strong id="w-pressure">1013.0</strong> гПа</p>
+                                                <p>☀️ УФ-индекс: <strong id="w-uv">3.0</strong></p>
+                                                <p>💡 Освещённость: <strong id="w-light">750</strong> лк</p>
+                                            </div>
+                                        </div>
 
                                         <div id="weatherChartContainer">
                                             <canvas id="weatherChart"></canvas>
@@ -155,7 +183,6 @@
                             <h5 class="mb-3 fw-bold">🐄 Загоны для коров</h5>
                             <div class="row g-3" id="pens"></div>
                         </div>
-
 
                         <!-- Конвейер -->
                         <div class="col-lg-6">
@@ -201,17 +228,25 @@
                             <div class="card">
                                 <div class="card-header fs-5">⚙️ Автоматические сценарии</div>
                                 <div class="card-body">
+                                    <!-- Переключатель симуляции погоды -->
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="simulation-switch" onchange="toggleSimulation()">
+                                        <label class="form-check-label" for="simulation-switch">Симуляция погоды (автогенерация)</label>
+                                    </div>
                                     <div class="form-check form-switch mb-3">
                                         <input class="form-check-input" type="checkbox" id="sc-storm" checked
                                             onchange="toggleScenario('storm')">
-                                        <label class="form-check-label">Сильный ветер + дождь → открыть двери
-                                            загонов</label>
+                                        <label class="form-check-label">Сильный ветер + дождь → открыть двери загонов</label>
                                     </div>
-                                    <div class="form-check form-switch">
+                                    <div class="form-check form-switch mb-3">
                                         <input class="form-check-input" type="checkbox" id="sc-wrong" checked
                                             onchange="toggleScenario('wrongVeg')">
-                                        <label class="form-check-label">Неправильная RFID → отправить трактор к
-                                            конвейеру</label>
+                                        <label class="form-check-label">Неправильная RFID → отправить трактор к конвейеру</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="sc-water-pump" checked
+                                            onchange="toggleScenario('autoWaterPump')">
+                                        <label class="form-check-label">Нет воды → включить помпу, есть вода → выключить</label>
                                     </div>
                                 </div>
                             </div>
