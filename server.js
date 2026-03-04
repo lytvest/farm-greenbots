@@ -1,3 +1,4 @@
+// server.js (modified)
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
@@ -40,7 +41,15 @@ let state = {
   tractor: { position: 'warehouse' },
   scenarios: { storm: true, wrongVeg: true, autoWaterPump: true },
   notifications: [],
-  simulation: { enabled: false }  
+  simulation: { enabled: false },
+  lastUpdates: {
+    greenhouse: null,
+    weather: null,
+    pens: [
+      { id: 1, door: null, pump: null },
+      { id: 2, door: null, pump: null }
+    ]
+  }  
 };
 
 let cooldowns = { storm: 0, wrongVeg: 0 };
@@ -181,6 +190,8 @@ app.post('/api/weather/update', (req, res) => {
 
   if (state.weatherHistory.length > 180) state.weatherHistory.shift();
 
+  state.lastUpdates.weather = Date.now();
+
   res.json({ ok: true, message: "Данные от метеостанции приняты" });
 });
 
@@ -220,6 +231,8 @@ app.post('/json/data', (req, res) => {
   if (air_hum !== undefined) state.greenhouse.hum = parseFloat(air_hum);
   if (air_press !== undefined) state.greenhouse.press = parseFloat(air_press);
 
+  state.lastUpdates.greenhouse = Date.now();
+
   res.json({
     pump: state.greenhouse.watering,
     lamp: state.greenhouse.lightMode,       
@@ -249,9 +262,17 @@ app.post('/api/greenhouse/:param/:value', (req, res) => {
 });
 
 app.post('/api/pen/:id/:param/:value', (req, res) => {
-  const pen = state.pens.find(p => p.id === parseInt(req.params.id));
-  if (pen) pen[req.params.param] = req.params.value === 'true';
-  res.json({ ok: true });
+  const id = parseInt(req.params.id);
+  const param = req.params.param;
+  const pen = state.pens.find(p => p.id === id);
+  if (pen) {
+    pen[param] = req.params.value === 'true';
+    const penUpdate = state.lastUpdates.pens.find(p => p.id === id);
+    if (penUpdate) penUpdate[param] = Date.now();
+    res.json({ ok: true });
+  } else {
+    res.status(404).json({ error: 'Pen not found' });
+  }
 });
 
 app.post('/api/conveyor/:action', (req, res) => {

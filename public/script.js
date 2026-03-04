@@ -1,3 +1,4 @@
+// script.js (modified)
 let state = {};
 
 let weatherChart = null;
@@ -134,6 +135,8 @@ async function loadState() {
 }
 
 function renderAll() {
+  const now = Date.now();
+
   // Теплица
   document.getElementById('gh-temp').textContent = state.greenhouse.temp.toFixed(1);
   document.getElementById('gh-hum').textContent = state.greenhouse.hum.toFixed(1);
@@ -141,6 +144,21 @@ function renderAll() {
   document.getElementById('gh-soil-hum').textContent = state.greenhouse.soil_hum.toFixed(1);
   document.getElementById('gh-light-level').textContent = state.greenhouse.light_level.toFixed(1);
   document.getElementById('gh-press').textContent = state.greenhouse.press.toFixed(1);
+
+  const ghLast = state.lastUpdates.greenhouse;
+  const ghTimeElem = document.getElementById('gh-last-update');
+  const ghStatusElem = document.getElementById('gh-status');
+  if (ghLast) {
+    const date = new Date(ghLast);
+    ghTimeElem.textContent = date.toLocaleTimeString('ru-RU');
+    const isOnline = now - ghLast < 10000;
+    ghStatusElem.textContent = isOnline ? 'Online' : 'Offline';
+    ghStatusElem.className = `badge ${isOnline ? 'bg-success' : 'bg-danger'}`;
+  } else {
+    ghTimeElem.textContent = '-';
+    ghStatusElem.textContent = 'Offline';
+    ghStatusElem.className = 'badge bg-danger';
+  }
 
   const winStatus = document.getElementById('gh-window-status');
   winStatus.textContent = state.greenhouse.window ? 'Открыто' : 'Закрыто';
@@ -179,6 +197,21 @@ function renderAll() {
   document.getElementById('w-uv').textContent = state.weather.uv.toFixed(1);
   document.getElementById('w-light').textContent = state.weather.light.toFixed(0);
 
+  const wLast = state.lastUpdates.weather;
+  const wTimeElem = document.getElementById('w-last-update');
+  const wStatusElem = document.getElementById('w-status');
+  if (wLast) {
+    const date = new Date(wLast);
+    wTimeElem.textContent = date.toLocaleTimeString('ru-RU');
+    const isOnline = now - wLast < 10000;
+    wStatusElem.textContent = isOnline ? 'Online' : 'Offline';
+    wStatusElem.className = `badge ${isOnline ? 'bg-success' : 'bg-danger'}`;
+  } else {
+    wTimeElem.textContent = '-';
+    wStatusElem.textContent = 'Offline';
+    wStatusElem.className = 'badge bg-danger';
+  }
+
   // Загоны
   const pensHtml = state.pens.map(p => `
     <div class="col-md-6">
@@ -192,6 +225,7 @@ function renderAll() {
           <button onclick="togglePen(${p.id}, 'door')" class="btn btn-outline-primary w-100 mb-3">
             ${p.door ? 'Закрыть дверь' : 'Открыть дверь'}
           </button>
+          <p>Статус платы: <strong id="pen-door-last-${p.id}">-</strong> <span id="pen-door-status-${p.id}" class="badge bg-secondary">Offline</span></p>
           <div class="mb-3">
             <strong>Помпа:</strong>
             <span class="badge badge-state ${p.pump ? 'bg-success' : 'bg-secondary'}">${p.pump ? 'Включена' : 'Выключена'}</span>
@@ -199,6 +233,7 @@ function renderAll() {
           <button onclick="togglePen(${p.id}, 'pump')" class="btn btn-outline-info w-100 mb-3">
             ${p.pump ? 'Выключить помпу' : 'Включить помпу'}
           </button>
+          <p>Статус платы: <strong id="pen-pump-last-${p.id}">-</strong> <span id="pen-pump-status-${p.id}" class="badge bg-secondary">Offline</span></p>
           <p class="mt-2 mb-0">
             <strong>Вода:</strong> 
             <span class="badge ${p.waterPresent ? 'bg-success' : 'bg-danger'}">${p.waterPresent ? 'Есть' : 'Нет'}</span>
@@ -208,6 +243,39 @@ function renderAll() {
     </div>
   `).join('');
   document.getElementById('pens').innerHTML = pensHtml;
+
+  state.pens.forEach(p => {
+    const penUpdate = state.lastUpdates.pens.find(up => up.id === p.id);
+    // Door
+    const doorLastElem = document.getElementById(`pen-door-last-${p.id}`);
+    const doorStatusElem = document.getElementById(`pen-door-status-${p.id}`);
+    if (penUpdate && penUpdate.door) {
+      const date = new Date(penUpdate.door);
+      doorLastElem.textContent = date.toLocaleTimeString('ru-RU');
+      const isOnline = now - penUpdate.door < 10000;
+      doorStatusElem.textContent = isOnline ? 'Online' : 'Offline';
+      doorStatusElem.className = `badge ${isOnline ? 'bg-success' : 'bg-danger'}`;
+    } else {
+      doorLastElem.textContent = '-';
+      doorStatusElem.textContent = 'Offline';
+      doorStatusElem.className = 'badge bg-danger';
+    }
+
+    // Pump
+    const pumpLastElem = document.getElementById(`pen-pump-last-${p.id}`);
+    const pumpStatusElem = document.getElementById(`pen-pump-status-${p.id}`);
+    if (penUpdate && penUpdate.pump) {
+      const date = new Date(penUpdate.pump);
+      pumpLastElem.textContent = date.toLocaleTimeString('ru-RU');
+      const isOnline = now - penUpdate.pump < 10000;
+      pumpStatusElem.textContent = isOnline ? 'Online' : 'Offline';
+      pumpStatusElem.className = `badge ${isOnline ? 'bg-success' : 'bg-danger'}`;
+    } else {
+      pumpLastElem.textContent = '-';
+      pumpStatusElem.textContent = 'Offline';
+      pumpStatusElem.className = 'badge bg-danger';
+    }
+  });
 
   // Конвейер
   const convStatus = document.getElementById('conv-status');
